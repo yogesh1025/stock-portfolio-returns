@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    image: portfolio-time-machine
+    container_name: portfolio-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8743:8000"
+    volumes:
+      - .:/app            # your edits land inside the container instantly
+    command: python app.py  # ensures Flask's debug reloader is active

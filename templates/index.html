@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Portfolio Compounding in Action</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0c0b;
+    --panel: #121614;
+    --panel-2: #161b19;
+    --line: #232b28;
+    --txt: #e8efe9;
+    --muted: #8a978f;
+    --accent: #34d399;
+    --accent-dim: #0f3d2e;
+    --loss: #f87171;
+    --gold: #e2b659;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #11241c 0%, transparent 55%),
+      radial-gradient(900px 500px at -10% 110%, #1a1410 0%, transparent 50%),
+      var(--bg);
+    color: var(--txt);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    padding: 28px 20px 60px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+
+  /* ---------- Header ---------- */
+  header { margin-bottom: 8px; padding-left: 56px; }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .28em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+  }
+  h1 {
+    font-family: 'Fraunces', serif; font-weight: 900; font-size: 52px;
+    line-height: 1.0; letter-spacing: -.02em;
+    white-space: nowrap; overflow: hidden;   /* JS auto-fits to a single line */
+  }
+  h1 em { font-style: italic; color: var(--gold); margin: 0 .06em; }
+
+  /* ---------- Hamburger + Drawer ---------- */
+  .hamburger {
+    position: fixed; top: 24px; left: 20px; z-index: 40;
+    width: 44px; height: 44px; border-radius: 11px;
+    background: var(--panel); border: 1px solid var(--line); color: var(--txt);
+    font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, background .15s;
+  }
+  .hamburger:hover { border-color: var(--accent); }
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 45;
+  }
+  .overlay.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; left: 0; height: 100%; width: 340px; max-width: 86vw;
+    background: var(--panel); border-right: 1px solid var(--line); z-index: 50;
+    transform: translateX(-102%); transition: transform .25s ease; overflow-y: auto;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-inner { padding: 24px 22px 40px; }
+  .drawer h2 {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .2em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 18px;
+  }
+  .drawer hr { border: none; border-top: 1px solid var(--line); margin: 26px 0 22px; }
+
+  label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 7px; }
+  .field { margin-bottom: 18px; }
+  input[type=text], input[type=number] {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--line);
+    color: var(--txt); border-radius: 10px; padding: 12px 14px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 15px; outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: var(--accent); }
+  .toggle { display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+  .switch { position: relative; width: 46px; height: 26px; background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 20px; transition: background .2s; flex: none; }
+  .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
+  input[type=checkbox] { display: none; }
+  input[type=checkbox]:checked + .switch { background: var(--accent-dim); border-color: var(--accent); }
+  input[type=checkbox]:checked + .switch::after { transform: translateX(20px); background: var(--accent); }
+  .toggle span { font-size: 14px; color: var(--txt); }
+
+  button.run {
+    width: 100%; margin-top: 6px; background: var(--accent); color: #06140d;
+    border: none; border-radius: 10px; padding: 14px; font-weight: 600; font-size: 15px;
+    font-family: 'IBM Plex Sans'; cursor: pointer; transition: filter .15s, transform .05s;
+  }
+  button.run:hover { filter: brightness(1.08); }
+  button.run:active { transform: translateY(1px); }
+  button.run:disabled { opacity: .5; cursor: not-allowed; }
+  .err { color: var(--loss); font-size: 13px; margin-top: 12px; min-height: 16px; }
+
+  .controls { display: flex; flex-direction: column; gap: 16px; }
+  .ctrlrow { display: flex; gap: 10px; }
+  .ctrlbtn { flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--txt);
+    border-radius: 9px; padding: 10px 14px; cursor: pointer; font-size: 13px; font-family: 'IBM Plex Mono', monospace; }
+  .ctrlbtn:hover { border-color: var(--accent); }
+  .ctrlbtn:disabled { opacity: .45; cursor: not-allowed; }
+  .speedwrap { display: flex; align-items: center; gap: 12px; }
+  .speedwrap label { margin: 0; white-space: nowrap; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px;
+    background: var(--line); flex: 1; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--accent); cursor: pointer; }
+  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%;
+    background: var(--accent); cursor: pointer; }
+  .speedval { font-family: 'IBM Plex Mono', monospace; color: var(--accent); width: 46px; text-align: right; }
+
+  /* ---------- Hero (16:9) ---------- */
+  .hero {
+    width: 100%; max-width: 1080px; margin: 22px auto 0;
+    aspect-ratio: 16 / 9; display: flex; flex-direction: column; gap: 12px; min-height: 0;
+  }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
+
+  .summary, .statrow4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex: none; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
+  .stat .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+  .stat .v { font-family: 'IBM Plex Mono', monospace; font-size: clamp(15px, 1.7vw, 21px); font-weight: 600; margin-top: 6px; }
+  .v.pos { color: var(--accent); } .v.neg { color: var(--loss); } .v.gold { color: var(--gold); }
+
+  .chartcard { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 14px 18px 10px; }
+  .livebar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; flex-wrap: wrap; gap: 8px; flex: none; }
+  .livedate { font-family: 'IBM Plex Mono', monospace; color: var(--gold); font-size: 14px; }
+  .liveval { font-family: 'IBM Plex Mono', monospace; font-size: clamp(20px, 2.4vw, 26px); font-weight: 600; }
+  .chart-holder { position: relative; flex: 1 1 auto; min-height: 0; }
+  .chart-holder canvas { position: absolute; inset: 0; }
+
+  .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); text-align: center; font-size: 15px; }
+  .countdown { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(80px, 16vw, 180px); color: var(--gold); }
+  .hidden { display: none !important; }
+  .pill { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  @media (max-width: 760px) {
+    .hero { aspect-ratio: auto; }
+    .summary, .statrow4 { grid-template-columns: repeat(2, 1fr); }
+    .chartcard { min-height: 300px; }
+    header { padding-left: 0; margin-top: 56px; }
+    h1 { white-space: normal; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Hamburger + slide-in drawer (Setup + Playback) -->
+  <button class="hamburger" id="hamburger" aria-label="Open menu">&#9776;</button>
+  <div class="overlay" id="overlay"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-inner">
+      <h2>Setup</h2>
+      <div class="field">
+        <label for="ticker">Stock ticker</label>
+        <input type="text" id="ticker" placeholder="e.g. AAPL, MSFT, TSLA" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="initial">Initial investment (USD)</label>
+        <input type="number" id="initial" value="1000" min="1" step="any" />
+      </div>
+      <div class="field">
+        <label for="reinvest" style="margin-bottom:10px">Dividends</label>
+        <label class="toggle">
+          <input type="checkbox" id="reinvest" />
+          <span class="switch"></span>
+          <span>Reinvest dividends (DRIP)</span>
+        </label>
+      </div>
+      <button class="run" id="runBtn">Run simulation</button>
+      <div class="err" id="err"></div>
+
+      <hr />
+
+      <h2>Playback</h2>
+      <div class="controls">
+        <div class="ctrlrow">
+          <button class="ctrlbtn" id="playBtn" disabled>Play</button>
+          <button class="ctrlbtn" id="restartBtn" disabled>Restart</button>
+        </div>
+        <div class="speedwrap">
+          <label>SPEED</label>
+          <input type="range" id="speed" min="1" max="50" step="1" value="1" />
+          <span class="speedval" id="speedVal">1x</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="wrap">
+    <header>
+      <div class="eyebrow">Portfolio Compounding in Action</div>
+      <h1 id="headline">Performance of <em>$1,000</em> invested in IPO of <em>&mdash;</em></h1>
+    </header>
+
+    <!-- HERO (16:9): top stats, share-price chart, bottom stats -->
+    <div class="hero" id="hero">
+      <div class="summary" id="summary">
+        <div class="stat"><div class="k">Portfolio Growth</div><div class="v" id="sGrowth">&mdash;</div></div>
+        <div class="stat"><div class="k">Return (to date)</div><div class="v" id="sReturn">&mdash;</div></div>
+        <div class="stat"><div class="k">CAGR</div><div class="v" id="sCagr">&mdash;</div></div>
+        <div class="stat"><div class="k">Held</div><div class="v" id="sYears">&mdash;</div></div>
+      </div>
+
+      <div class="card chartcard">
+        <div class="livebar" id="livebar">
+          <div>
+            <div class="pill" id="liveLabel">SHARE PRICE</div>
+            <div class="liveval" id="liveVal">&mdash;</div>
+          </div>
+          <div class="livedate" id="liveDate"></div>
+        </div>
+        <div class="chart-holder">
+          <div class="placeholder" id="ph">Search the Stock</div>
+          <div class="countdown hidden" id="countdown"></div>
+          <canvas id="chart" class="hidden"></canvas>
+        </div>
+      </div>
+
+      <div class="statrow4" id="statrow4">
+        <div class="stat"><div class="k">Shares Held</div><div class="v" id="sShares">&mdash;</div></div>
+        <div class="stat"><div class="k">Dividends Paid</div><div class="v" id="sDiv">&mdash;</div></div>
+        <div class="stat"><div class="k">Dividend Yield</div><div class="v" id="sYield">&mdash;</div></div>
+        <div class="stat"><div class="k">Company Valuation</div><div class="v" id="sMktCap">&mdash;</div></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmtUSD  = (n) => '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits: 0});
+const fmtUSD2 = (n) => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const fmtNum  = (n) => Number(n).toLocaleString('en-US', {maximumFractionDigits: 2});
+function fmtBig(n) {
+  const a = Math.abs(n);
+  if (a >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+  if (a >= 1e9)  return '$' + (n / 1e9).toFixed(2) + 'B';
+  if (a >= 1e6)  return '$' + (n / 1e6).toFixed(2) + 'M';
+  if (a >= 1e3)  return '$' + (n / 1e3).toFixed(1) + 'K';
+  return '$' + Math.round(n);
+}
+
+let chart = null, DATA = null, raf = null;
+let progress = 0, lastTs = null, playing = false, curK = 0;
+const SEC_PER_YEAR = 15;
+
+/* share price for a point (backend `price`; fall back to value only if missing) */
+const priceOf = (p) => (p.price != null ? p.price : p.v);
+
+/* ---------- Drawer ---------- */
+function openDrawer()  { $('drawer').classList.add('open'); $('overlay').classList.add('open'); }
+function closeDrawer() { $('drawer').classList.remove('open'); $('overlay').classList.remove('open'); }
+$('hamburger').addEventListener('click', openDrawer);
+$('overlay').addEventListener('click', closeDrawer);
+
+/* ---------- Header (always one line) ---------- */
+function updateHeadline() {
+  const t = $('ticker').value.trim().toUpperCase() || '&mdash;';
+  const init = parseFloat($('initial').value);
+  const val = init > 0 ? fmtUSD(init) : '&mdash;';
+  $('headline').innerHTML = 'Performance of <em>' + val + '</em> invested in IPO of <em>' + t + '</em>';
+  fitHeadline();
+}
+function fitHeadline() {
+  const el = $('headline');
+  if (getComputedStyle(el).whiteSpace !== 'nowrap') { el.style.fontSize = ''; return; }
+  let size = 52;
+  el.style.fontSize = size + 'px';
+  let guard = 0;
+  while (el.scrollWidth > el.clientWidth && size > 16 && guard < 90) {
+    size -= 1; el.style.fontSize = size + 'px'; guard++;
+  }
+}
+
+/* ---------- Split markers plugin (vertical labels) ---------- */
+const splitPlugin = {
+  id: 'splitMarkers',
+  afterDatasetsDraw(c) {
+    if (!DATA || !DATA._splitPlot) return;
+    const { ctx, chartArea } = c;
+    const x = c.scales.x;
+    ctx.save();
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    DATA._splitPlot.forEach(sp => {
+      if (sp.idx >= curK) return;                  // not reached on the timeline yet
+      const px = x.getPixelForValue(sp.idx);
+      if (px == null || px < chartArea.left - 1 || px > chartArea.right + 1) return;
+      // thin dashed line at the split date
+      ctx.beginPath();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(226,182,89,0.55)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(px, chartArea.top);
+      ctx.lineTo(px, chartArea.bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // vertical label reading downward, hugging the line (no overlap with neighbours)
+      const text = 'Stock split (' + sp.ratio + ')';
+      ctx.save();
+      ctx.translate(px, chartArea.top + 4);
+      ctx.rotate(Math.PI / 2);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#e2b659';
+      ctx.fillText(text, 0, -3);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+};
+
+function buildSplitPlot() {
+  DATA._splitPlot = [];
+  if (!DATA.splits || !DATA.points.length) return;
+  const pts = DATA.points;
+  DATA.splits.forEach(s => {
+    const st = new Date(s.t).getTime();
+    let idx = pts.findIndex(p => new Date(p.t).getTime() >= st);
+    if (idx < 0) idx = pts.length - 1;
+    DATA._splitPlot.push({ idx, ratio: s.ratio });
+  });
+}
+
+/* ---------- Chart ---------- */
+function buildChart() {
+  const ctx = $('chart').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 500);
+  grad.addColorStop(0, 'rgba(52,211,153,0.35)');
+  grad.addColorStop(1, 'rgba(52,211,153,0.0)');
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [{
+      data: [], borderColor: '#34d399', borderWidth: 2,
+      backgroundColor: grad, fill: true, pointRadius: 0, tension: 0.15,
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      interaction: { intersect: false, mode: 'index' },
+      scales: {
+        x: { grid: { color: '#1b211e' }, ticks: { color: '#8a978f', maxTicksLimit: 7, font: { family: 'IBM Plex Mono', size: 10 } } },
+        y: { grid: { color: '#1b211e' }, ticks: { color: '#8a978f', font: { family: 'IBM Plex Mono', size: 10 },
+             callback: (v) => '$' + Number(v).toLocaleString('en-US', {maximumFractionDigits: 0}) } }
+      },
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: (c) => fmtUSD2(c.parsed.y) } } }
+    },
+    plugins: [splitPlugin]
+  });
+}
+
+/* ---------- Frame: chart = SHARE PRICE; all stats grow live ---------- */
+function applyFrame() {
+  if (!DATA) return;
+  const pts = DATA.points;
+  const n = pts.length;
+  const k = Math.max(1, Math.min(n, Math.round(progress * n)));
+  curK = k;
+  const cur = pts[k - 1];
+
+  /* chart line = share price progression */
+  chart.data.labels = pts.slice(0, k).map(p => p.t);
+  chart.data.datasets[0].data = pts.slice(0, k).map(p => priceOf(p));
+  chart.update('none');
+
+  /* live bar = current share price */
+  const curPrice = priceOf(cur);
+  const basePrice = priceOf(pts[0]);
+  $('liveVal').textContent = fmtUSD2(curPrice);
+  $('liveVal').style.color = curPrice >= basePrice ? 'var(--accent)' : 'var(--loss)';
+  $('liveDate').textContent = cur.t;
+
+  /* top row: portfolio metrics, live */
+  const init = DATA.summary.initial;
+  const curV = cur.v;
+  const frac = n > 1 ? (k - 1) / (n - 1) : 1;
+  const elapsed = DATA.summary.years * frac;
+  const ret = (curV / init - 1) * 100;
+  const cagr = elapsed > 0 ? (Math.pow(curV / init, 1 / elapsed) - 1) * 100 : 0;
+  const cls = ret >= 0 ? 'pos' : 'neg';
+
+  $('sGrowth').textContent = fmtUSD(curV);          $('sGrowth').className = 'v ' + cls;
+  $('sReturn').textContent = (ret >= 0 ? '+' : '') + ret.toLocaleString('en-US', {maximumFractionDigits: 0}) + '%';
+  $('sReturn').className = 'v ' + cls;
+  $('sCagr').textContent = cagr.toFixed(1) + '%';   $('sCagr').className = 'v ' + cls;
+  $('sYears').textContent = elapsed.toFixed(1) + ' yr'; $('sYears').className = 'v';
+
+  /* bottom row: shares, dividends, yield, company valuation, live */
+  const shares = cur.shares != null ? cur.shares : 0;
+  const divCum = cur.div_cum != null ? cur.div_cum : 0;
+  const dYield = cur.yield != null ? cur.yield : 0;
+  $('sShares').textContent = fmtNum(shares) + ' sh';   $('sShares').className = 'v';
+  $('sDiv').textContent = fmtUSD2(divCum);             $('sDiv').className = 'v gold';
+  $('sYield').textContent = dYield.toFixed(2) + '%';   $('sYield').className = 'v ' + (dYield > 0 ? 'pos' : '');
+  if (cur.mktcap != null) {
+    $('sMktCap').textContent = fmtBig(cur.mktcap);     $('sMktCap').className = 'v pos';
+  } else {
+    $('sMktCap').textContent = '\u2014';               $('sMktCap').className = 'v';
+  }
+}
+
+/* ---------- Animation loop ---------- */
+function tick(now) {
+  if (!playing) return;
+  if (lastTs === null) lastTs = now;
+  const dt = (now - lastTs) / 1000;
+  lastTs = now;
+  const speed = parseFloat($('speed').value);
+  const totalSeconds = DATA.summary.years * SEC_PER_YEAR;
+  progress += (dt / totalSeconds) * speed;
+  if (progress >= 1) { progress = 1; applyFrame(); stop(); return; }
+  applyFrame();
+  raf = requestAnimationFrame(tick);
+}
+function play() {
+  if (!DATA) return;
+  if (progress >= 1) progress = 0;
+  playing = true; lastTs = null;
+  $('playBtn').textContent = 'Pause';
+  raf = requestAnimationFrame(tick);
+}
+function stop() {
+  playing = false;
+  if (raf) cancelAnimationFrame(raf);
+  raf = null;
+  $('playBtn').textContent = progress >= 1 ? 'Replay' : 'Play';
+}
+
+/* ---------- 3-2-1 countdown ---------- */
+function countdownThenPlay() {
+  const el = $('countdown');
+  let n = 3;
+  el.textContent = n;
+  el.classList.remove('hidden');
+  const iv = setInterval(() => {
+    n--;
+    if (n <= 0) { clearInterval(iv); el.classList.add('hidden'); play(); }
+    else el.textContent = n;
+  }, 1000);
+}
+
+/* ---------- Run ---------- */
+async function run() {
+  const ticker = $('ticker').value.trim();
+  const initial = parseFloat($('initial').value);
+  const reinvest = $('reinvest').checked;
+  $('err').textContent = '';
+  if (!ticker) { $('err').textContent = 'Enter a stock ticker.'; return; }
+  if (!(initial > 0)) { $('err').textContent = 'Initial investment must be greater than 0.'; return; }
+
+  $('runBtn').disabled = true; $('runBtn').textContent = 'Fetching history...';
+  try {
+    const res = await fetch('/api/simulate', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ ticker, initial, reinvest })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Request failed');
+    DATA = json;
+
+    updateHeadline();
+    $('ph').classList.add('hidden');
+    $('chart').classList.remove('hidden');
+    $('liveLabel').textContent = ticker.toUpperCase() + ' / share price';
+    $('playBtn').disabled = false;
+    $('restartBtn').disabled = false;
+
+    buildChart();
+    buildSplitPlot();
+    progress = 0; applyFrame();
+    closeDrawer();
+    countdownThenPlay();
+  } catch (e) {
+    $('err').textContent = e.message;
+  } finally {
+    $('runBtn').disabled = false; $('runBtn').textContent = 'Run simulation';
+  }
+}
+
+/* ---------- Events ---------- */
+$('runBtn').addEventListener('click', run);
+$('ticker').addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
+$('ticker').addEventListener('input', updateHeadline);
+$('initial').addEventListener('input', updateHeadline);
+$('playBtn').addEventListener('click', () => playing ? stop() : play());
+$('restartBtn').addEventListener('click', () => { progress = 0; applyFrame(); play(); });
+$('speed').addEventListener('input', () => { $('speedVal').textContent = parseInt($('speed').value, 10) + 'x'; });
+window.addEventListener('resize', fitHeadline);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeadline);
+
+updateHeadline();
+</script>
+</body>
+</html>
