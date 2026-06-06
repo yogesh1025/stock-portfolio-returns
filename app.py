@@ -19,71 +19,74 @@ def simulate(df: pd.DataFrame, initial: float, reinvest: bool, market_cap_now=No
     if df.empty:
         raise ValueError("No usable price data for this ticker.")
 
-    first_close = float(df["Close"].iloc[0])
-    shares = initial / first_close
+    timestamps = list(df.index)
+    dates = [ts.strftime("%Y-%m-%d") for ts in timestamps]
+    # Yahoo's "Close" (even with auto_adjust=False) is SPLIT-ADJUSTED, not raw.
+    sclose = [float(c) for c in df["Close"].tolist()]
+    split_f = [float(s or 0) for s in df["Stock Splits"].tolist()]
+    div_raw = [float(d or 0) for d in df["Dividends"].tolist()]
+    n = len(sclose)
+
+    # ----- Reverse Yahoo's split adjustment to recover ORIGINAL nominal prices -----
+    # nominal[i] = split_adjusted_close[i] * (product of every split AFTER date i)
+    future_prod = [1.0] * n
+    fut = 1.0
+    for i in range(n - 1, -1, -1):
+        future_prod[i] = fut
+        if split_f[i] > 0:
+            fut *= split_f[i]
+
+    price = [sclose[i] * future_prod[i] for i in range(n)]      # true original share price
+    div_nom = [div_raw[i] * future_prod[i] for i in range(n)]   # dividend per share, same basis
+
+    first_price = price[0]
+    shares = initial / first_price
     start_shares = shares
 
     dividends_collected = 0.0
     points = []
     splits = []
-    div_history = []      # (timestamp, dividend_per_share) for trailing yield
-    closes = []           # raw closes (for split-adjusted valuation)
-    split_factors = []    # split factor per row
+    div_history = []  # (timestamp, nominal_dividend_per_share) for trailing yield
 
-    for ts, row in df.iterrows():
-        close = float(row["Close"])
-        split = float(row.get("Stock Splits", 0) or 0)
-        div = float(row.get("Dividends", 0) or 0)
+    for i in range(n):
+        ts = timestamps[i]
+        p = price[i]
 
-        if split and split > 0:
-            shares *= split
-            splits.append({"t": ts.strftime("%Y-%m-%d"), "ratio": _split_ratio(split)})
+        if split_f[i] > 0:
+            shares *= split_f[i]      # original-price basis: price halves, share count grows
+            splits.append({"t": dates[i], "ratio": _split_ratio(split_f[i])})
 
-        if div and div > 0:
-            cash = shares * div
+        if div_nom[i] > 0:
+            cash = shares * div_nom[i]
             dividends_collected += cash
-            if reinvest and close > 0:
-                shares += cash / close
-            div_history.append((ts, div))
+            if reinvest and p > 0:
+                shares += cash / p
+            div_history.append((ts, div_nom[i]))
 
         # trailing-12-month dividend per share -> dividend yield %
         cutoff = ts - pd.Timedelta(days=365)
         ttm_dps = sum(d for (t, d) in div_history if t > cutoff)
-        div_yield = (ttm_dps / close * 100.0) if close > 0 else 0.0
+        div_yield = (ttm_dps / p * 100.0) if p > 0 else 0.0
 
-        points.append({
-            "t": ts.strftime("%Y-%m-%d"),
-            "v": round(shares * close, 2),               # portfolio value (top stats)
-            "price": round(close, 2),                     # share price (chart + live bar)
-            "shares": round(shares, 4),                   # live share count
-            "div_cum": round(dividends_collected, 2),     # total dividends paid to date
-            "yield": round(div_yield, 2),                 # trailing dividend yield %
-        })
-        closes.append(close)
-        split_factors.append(split)
+        pt = {
+            "t": dates[i],
+            "v": round(shares * p, 2),               # portfolio value (top stats)
+            "price": round(p, 2),                     # ORIGINAL share price (chart + live bar)
+            "shares": round(shares, 4),               # live share count
+            "div_cum": round(dividends_collected, 2), # total dividends paid to date
+            "yield": round(div_yield, 2),             # trailing dividend yield %
+        }
+        # Company valuation scales with the split-adjusted (smooth) price, anchored
+        # to today's market cap. Market cap is split-invariant, so it stays smooth.
+        if market_cap_now and sclose[-1]:
+            pt["mktcap"] = round(market_cap_now * sclose[i] / sclose[-1], 2)
+        points.append(pt)
 
-    # ----- Company valuation (market cap) per point -----
-    # Split-adjust every close to today's share basis, then scale from the
-    # current market cap. This tracks the company's value over time (it assumes
-    # a roughly constant real share count, i.e. ignores buybacks / new issuance).
-    n = len(points)
-    if market_cap_now and n:
-        fut = 1.0
-        adj = [0.0] * n
-        for i in range(n - 1, -1, -1):
-            adj[i] = (closes[i] / fut) if fut else closes[i]
-            if split_factors[i] and split_factors[i] > 0:
-                fut *= split_factors[i]
-        adj_last = adj[-1] or closes[-1]
-        if adj_last:
-            for i in range(n):
-                points[i]["mktcap"] = round(market_cap_now * adj[i] / adj_last, 2)
+    last_price = price[-1]
+    final_value = shares * last_price
 
-    last_close = float(df["Close"].iloc[-1])
-    final_value = shares * last_close
-
-    first_date = df.index[0]
-    last_date = df.index[-1]
+    first_date = timestamps[0]
+    last_date = timestamps[-1]
     years = max((last_date - first_date).days / 365.25, 1e-9)
 
     total_return_pct = (final_value / initial - 1.0) * 100.0
@@ -98,10 +101,10 @@ def simulate(df: pd.DataFrame, initial: float, reinvest: bool, market_cap_now=No
         "start_shares": round(start_shares, 4),
         "final_shares": round(shares, 4),
         "dividends_collected": round(dividends_collected, 2),
-        "start_date": first_date.strftime("%Y-%m-%d"),
-        "end_date": last_date.strftime("%Y-%m-%d"),
-        "first_close": round(first_close, 2),
-        "last_close": round(last_close, 2),
+        "start_date": dates[0],
+        "end_date": dates[-1],
+        "first_close": round(first_price, 2),
+        "last_close": round(last_price, 2),
     }
     return points, summary, splits
 
@@ -145,6 +148,8 @@ def api_simulate():
 
     try:
         tk = yf.Ticker(ticker)
+        # auto_adjust=False keeps dividends out of the price; we reverse Yahoo's
+        # split adjustment ourselves in simulate() to get the true original price.
         df = tk.history(period="max", auto_adjust=False)
     except Exception as exc:
         return jsonify({"error": f"Could not fetch data: {exc}"}), 502

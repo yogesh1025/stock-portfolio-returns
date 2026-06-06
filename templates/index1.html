@@ -35,13 +35,13 @@
   .wrap { max-width: 1080px; margin: 0 auto; }
 
   /* ---------- Header ---------- */
-  header { margin-bottom: 8px; padding-left: 56px; }
+  header { margin-bottom: 8px;padding-right: 50px; padding-left: 50px; }
   .eyebrow {
     font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .28em;
     text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
   }
   h1 {
-    font-family: 'Fraunces', serif; font-weight: 900; font-size: 52px;
+    font-family: 'Fraunces', serif; font-weight: 900; font-size: 48px;
     line-height: 1.0; letter-spacing: -.02em;
     white-space: nowrap; overflow: hidden;   /* JS auto-fits to a single line */
   }
@@ -49,10 +49,10 @@
 
   /* ---------- Hamburger + Drawer ---------- */
   .hamburger {
-    position: fixed; top: 24px; left: 20px; z-index: 40;
-    width: 44px; height: 44px; border-radius: 11px;
-    background: var(--panel); border: 1px solid var(--line); color: var(--txt);
-    font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    position: fixed; top: 3px; left: 3px; z-index: 40;
+    width: 2px; height: 2px; border-radius: 1px;
+    background: var(--panel); border: 0.1px solid var(--line); color: var(--txt);
+    font-size: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: border-color .15s, background .15s;
   }
   .hamburger:hover { border-color: var(--accent); }
@@ -126,8 +126,7 @@
   }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
 
-  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex: none; }
-  .statrow3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; flex: none; }
+  .summary, .statrow4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex: none; }
   .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
   .stat .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
   .stat .v { font-family: 'IBM Plex Mono', monospace; font-size: clamp(15px, 1.7vw, 21px); font-weight: 600; margin-top: 6px; }
@@ -149,8 +148,7 @@
 
   @media (max-width: 760px) {
     .hero { aspect-ratio: auto; }
-    .summary { grid-template-columns: repeat(2, 1fr); }
-    .statrow3 { grid-template-columns: repeat(3, 1fr); }
+    .summary, .statrow4 { grid-template-columns: repeat(2, 1fr); }
     .chartcard { min-height: 300px; }
     header { padding-left: 0; margin-top: 56px; }
     h1 { white-space: normal; }
@@ -194,7 +192,7 @@
         </div>
         <div class="speedwrap">
           <label>SPEED</label>
-          <input type="range" id="speed" min="1" max="50" step="1" value="1" />
+          <input type="range" id="speed" min="1" max="5" step="1" value="1" />
           <span class="speedval" id="speedVal">1x</span>
         </div>
       </div>
@@ -231,10 +229,11 @@
         </div>
       </div>
 
-      <div class="statrow3" id="statrow3">
+      <div class="statrow4" id="statrow4">
         <div class="stat"><div class="k">Shares Held</div><div class="v" id="sShares">&mdash;</div></div>
         <div class="stat"><div class="k">Dividends Paid</div><div class="v" id="sDiv">&mdash;</div></div>
         <div class="stat"><div class="k">Dividend Yield</div><div class="v" id="sYield">&mdash;</div></div>
+        <div class="stat"><div class="k">Company Valuation</div><div class="v" id="sMktCap">&mdash;</div></div>
       </div>
     </div>
   </div>
@@ -244,6 +243,14 @@ const $ = (id) => document.getElementById(id);
 const fmtUSD  = (n) => '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits: 0});
 const fmtUSD2 = (n) => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fmtNum  = (n) => Number(n).toLocaleString('en-US', {maximumFractionDigits: 2});
+function fmtBig(n) {
+  const a = Math.abs(n);
+  if (a >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+  if (a >= 1e9)  return '$' + (n / 1e9).toFixed(2) + 'B';
+  if (a >= 1e6)  return '$' + (n / 1e6).toFixed(2) + 'M';
+  if (a >= 1e3)  return '$' + (n / 1e3).toFixed(1) + 'K';
+  return '$' + Math.round(n);
+}
 
 let chart = null, DATA = null, raf = null;
 let progress = 0, lastTs = null, playing = false, curK = 0;
@@ -277,7 +284,7 @@ function fitHeadline() {
   }
 }
 
-/* ---------- Split markers plugin ---------- */
+/* ---------- Split markers plugin (vertical labels) ---------- */
 const splitPlugin = {
   id: 'splitMarkers',
   afterDatasetsDraw(c) {
@@ -299,13 +306,16 @@ const splitPlugin = {
       ctx.lineTo(px, chartArea.bottom);
       ctx.stroke();
       ctx.setLineDash([]);
-      // label, flipped to the left near the right edge
+      // vertical label reading downward, hugging the line (no overlap with neighbours)
       const text = 'Stock split (' + sp.ratio + ')';
-      const w = ctx.measureText(text).width;
-      const flip = px + 6 + w > chartArea.right;
+      ctx.save();
+      ctx.translate(px, chartArea.top + 4);
+      ctx.rotate(Math.PI / 2);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
       ctx.fillStyle = '#e2b659';
-      ctx.textAlign = flip ? 'right' : 'left';
-      ctx.fillText(text, flip ? px - 6 : px + 6, chartArea.top + 11);
+      ctx.fillText(text, 0, -3);
+      ctx.restore();
     });
     ctx.restore();
   }
@@ -387,13 +397,18 @@ function applyFrame() {
   $('sCagr').textContent = cagr.toFixed(1) + '%';   $('sCagr').className = 'v ' + cls;
   $('sYears').textContent = elapsed.toFixed(1) + ' yr'; $('sYears').className = 'v';
 
-  /* bottom row: shares, dividends, yield, live */
+  /* bottom row: shares, dividends, yield, company valuation, live */
   const shares = cur.shares != null ? cur.shares : 0;
   const divCum = cur.div_cum != null ? cur.div_cum : 0;
   const dYield = cur.yield != null ? cur.yield : 0;
   $('sShares').textContent = fmtNum(shares) + ' sh';   $('sShares').className = 'v';
   $('sDiv').textContent = fmtUSD2(divCum);             $('sDiv').className = 'v gold';
   $('sYield').textContent = dYield.toFixed(2) + '%';   $('sYield').className = 'v ' + (dYield > 0 ? 'pos' : '');
+  if (cur.mktcap != null) {
+    $('sMktCap').textContent = fmtBig(cur.mktcap);     $('sMktCap').className = 'v pos';
+  } else {
+    $('sMktCap').textContent = '\u2014';               $('sMktCap').className = 'v';
+  }
 }
 
 /* ---------- Animation loop ---------- */
@@ -423,10 +438,10 @@ function stop() {
   $('playBtn').textContent = progress >= 1 ? 'Replay' : 'Play';
 }
 
-/* ---------- 3-2-1 countdown ---------- */
+/* ---------- 7-to-1 countdown ---------- */
 function countdownThenPlay() {
   const el = $('countdown');
-  let n = 3;
+  let n = 7;
   el.textContent = n;
   el.classList.remove('hidden');
   const iv = setInterval(() => {

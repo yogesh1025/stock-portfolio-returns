@@ -35,7 +35,7 @@
   .wrap { max-width: 1080px; margin: 0 auto; }
 
   /* ---------- Header ---------- */
-  header { margin-bottom: 8px; padding-left: 56px; }
+  header { margin-bottom: 8px; text-align: center; }
   .eyebrow {
     font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .28em;
     text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
@@ -49,10 +49,10 @@
 
   /* ---------- Hamburger + Drawer ---------- */
   .hamburger {
-    position: fixed; top: 24px; left: 20px; z-index: 40;
-    width: 44px; height: 44px; border-radius: 11px;
+    position: fixed; top: 3px; left: 3px; z-index: 40;
+    width: 5px; height: 5px; border-radius: 3px;
     background: var(--panel); border: 1px solid var(--line); color: var(--txt);
-    font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: border-color .15s, background .15s;
   }
   .hamburger:hover { border-color: var(--accent); }
@@ -92,6 +92,14 @@
   input[type=checkbox]:checked + .switch { background: var(--accent-dim); border-color: var(--accent); }
   input[type=checkbox]:checked + .switch::after { transform: translateX(20px); background: var(--accent); }
   .toggle span { font-size: 14px; color: var(--txt); }
+
+  /* ---------- Currency radio group ---------- */
+  .radiogroup { display: flex; flex-direction: column; gap: 9px; }
+  .radio { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--txt); }
+  .radio input[type=radio] {
+    appearance: auto; -webkit-appearance: radio; display: inline-block;
+    width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex: none; margin: 0;
+  }
 
   button.run {
     width: 100%; margin-top: 6px; background: var(--accent); color: #06140d;
@@ -150,7 +158,7 @@
     .hero { aspect-ratio: auto; }
     .summary, .statrow4 { grid-template-columns: repeat(2, 1fr); }
     .chartcard { min-height: 300px; }
-    header { padding-left: 0; margin-top: 56px; }
+    header { margin-top: 56px; }
     h1 { white-space: normal; }
   }
 </style>
@@ -168,7 +176,11 @@
         <input type="text" id="ticker" placeholder="e.g. AAPL, MSFT, TSLA" autocomplete="off" />
       </div>
       <div class="field">
-        <label for="initial">Initial investment (USD)</label>
+        <label for="companyName">Company name (shown in headline)</label>
+        <input type="text" id="companyName" placeholder="e.g. Apple Inc." autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="initial">Initial investment</label>
         <input type="number" id="initial" value="1000" min="1" step="any" />
       </div>
       <div class="field">
@@ -178,6 +190,16 @@
           <span class="switch"></span>
           <span>Reinvest dividends (DRIP)</span>
         </label>
+      </div>
+      <div class="field">
+        <label>Currency symbol</label>
+        <div class="radiogroup" id="curGroup">
+          <label class="radio"><input type="radio" name="cur" value="$" checked /><span>Dollar ($)</span></label>
+          <label class="radio"><input type="radio" name="cur" value="&euro;" /><span>Euro (&euro;)</span></label>
+          <label class="radio"><input type="radio" name="cur" value="&#8377;" /><span>INR (&#8377;)</span></label>
+          <label class="radio"><input type="radio" name="cur" value="&pound;" /><span>Pound (&pound;)</span></label>
+          <label class="radio"><input type="radio" name="cur" value="&yen;" /><span>Yen (&yen;)</span></label>
+        </div>
       </div>
       <button class="run" id="runBtn">Run simulation</button>
       <div class="err" id="err"></div>
@@ -192,7 +214,7 @@
         </div>
         <div class="speedwrap">
           <label>SPEED</label>
-          <input type="range" id="speed" min="1" max="50" step="1" value="1" />
+          <input type="range" id="speed" min="1" max="5" step="1" value="1" />
           <span class="speedval" id="speedVal">1x</span>
         </div>
       </div>
@@ -240,16 +262,20 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-const fmtUSD  = (n) => '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits: 0});
-const fmtUSD2 = (n) => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+/* ---------- Currency symbol (display only; does NOT convert values) ---------- */
+let CUR = '$';
+
+const fmtUSD  = (n) => CUR + Number(n).toLocaleString('en-US', {maximumFractionDigits: 0});
+const fmtUSD2 = (n) => CUR + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fmtNum  = (n) => Number(n).toLocaleString('en-US', {maximumFractionDigits: 2});
 function fmtBig(n) {
   const a = Math.abs(n);
-  if (a >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
-  if (a >= 1e9)  return '$' + (n / 1e9).toFixed(2) + 'B';
-  if (a >= 1e6)  return '$' + (n / 1e6).toFixed(2) + 'M';
-  if (a >= 1e3)  return '$' + (n / 1e3).toFixed(1) + 'K';
-  return '$' + Math.round(n);
+  if (a >= 1e12) return CUR + (n / 1e12).toFixed(2) + 'T';
+  if (a >= 1e9)  return CUR + (n / 1e9).toFixed(2) + 'B';
+  if (a >= 1e6)  return CUR + (n / 1e6).toFixed(2) + 'M';
+  if (a >= 1e3)  return CUR + (n / 1e3).toFixed(1) + 'K';
+  return CUR + Math.round(n);
 }
 
 let chart = null, DATA = null, raf = null;
@@ -267,10 +293,12 @@ $('overlay').addEventListener('click', closeDrawer);
 
 /* ---------- Header (always one line) ---------- */
 function updateHeadline() {
-  const t = $('ticker').value.trim().toUpperCase() || '&mdash;';
+  const name = $('companyName').value.trim();
+  const t = $('ticker').value.trim().toUpperCase();
+  const display = name || t || '&mdash;';
   const init = parseFloat($('initial').value);
   const val = init > 0 ? fmtUSD(init) : '&mdash;';
-  $('headline').innerHTML = 'Performance of <em>' + val + '</em> invested in IPO of <em>' + t + '</em>';
+  $('headline').innerHTML = 'Performance of <em>' + val + '</em> invested in IPO of <em>' + display + '</em>';
   fitHeadline();
 }
 function fitHeadline() {
@@ -333,6 +361,26 @@ function buildSplitPlot() {
   });
 }
 
+/* ---------- Stepped dividend yield ----------
+   The displayed yield only updates on the points where a dividend is actually
+   paid (detected by div_cum increasing). It holds flat in between, instead of
+   drifting with the share price. */
+function buildYieldSteps() {
+  DATA._yieldStep = [];
+  const pts = DATA.points;
+  if (!pts || !pts.length) return;
+  let held = 0;
+  let prevDiv = pts[0].div_cum != null ? pts[0].div_cum : 0;
+  for (let i = 0; i < pts.length; i++) {
+    const dc = pts[i].div_cum != null ? pts[i].div_cum : 0;
+    if (i > 0 && dc > prevDiv + 1e-9) {            // a dividend was paid at this point
+      held = pts[i].yield != null ? pts[i].yield : held;
+    }
+    prevDiv = dc;
+    DATA._yieldStep[i] = held;
+  }
+}
+
 /* ---------- Chart ---------- */
 function buildChart() {
   const ctx = $('chart').getContext('2d');
@@ -352,7 +400,7 @@ function buildChart() {
       scales: {
         x: { grid: { color: '#1b211e' }, ticks: { color: '#8a978f', maxTicksLimit: 7, font: { family: 'IBM Plex Mono', size: 10 } } },
         y: { grid: { color: '#1b211e' }, ticks: { color: '#8a978f', font: { family: 'IBM Plex Mono', size: 10 },
-             callback: (v) => '$' + Number(v).toLocaleString('en-US', {maximumFractionDigits: 0}) } }
+             callback: (v) => CUR + Number(v).toLocaleString('en-US', {maximumFractionDigits: 0}) } }
       },
       plugins: { legend: { display: false },
         tooltip: { callbacks: { label: (c) => fmtUSD2(c.parsed.y) } } }
@@ -400,8 +448,10 @@ function applyFrame() {
   /* bottom row: shares, dividends, yield, company valuation, live */
   const shares = cur.shares != null ? cur.shares : 0;
   const divCum = cur.div_cum != null ? cur.div_cum : 0;
-  const dYield = cur.yield != null ? cur.yield : 0;
-  $('sShares').textContent = fmtNum(shares) + ' sh';   $('sShares').className = 'v';
+  const dYield = (DATA._yieldStep && DATA._yieldStep.length)
+    ? DATA._yieldStep[k - 1]
+    : (cur.yield != null ? cur.yield : 0);
+  $('sShares').textContent = fmtNum(shares) + ' shares';   $('sShares').className = 'v';
   $('sDiv').textContent = fmtUSD2(divCum);             $('sDiv').className = 'v gold';
   $('sYield').textContent = dYield.toFixed(2) + '%';   $('sYield').className = 'v ' + (dYield > 0 ? 'pos' : '');
   if (cur.mktcap != null) {
@@ -451,6 +501,13 @@ function countdownThenPlay() {
   }, 1000);
 }
 
+/* ---------- Currency change ---------- */
+function onCurrencyChange(sym) {
+  CUR = sym;
+  updateHeadline();
+  if (DATA) { applyFrame(); if (chart) chart.update('none'); }
+}
+
 /* ---------- Run ---------- */
 async function run() {
   const ticker = $('ticker').value.trim();
@@ -473,12 +530,14 @@ async function run() {
     updateHeadline();
     $('ph').classList.add('hidden');
     $('chart').classList.remove('hidden');
-    $('liveLabel').textContent = ticker.toUpperCase() + ' / share price';
+     const nameForLabel = $('companyName').value.trim() || ticker.toUpperCase();
+    $('liveLabel').textContent = nameForLabel + ' / share price';
     $('playBtn').disabled = false;
     $('restartBtn').disabled = false;
 
     buildChart();
     buildSplitPlot();
+    buildYieldSteps();
     progress = 0; applyFrame();
     closeDrawer();
     countdownThenPlay();
@@ -493,10 +552,14 @@ async function run() {
 $('runBtn').addEventListener('click', run);
 $('ticker').addEventListener('keydown', (e) => { if (e.key === 'Enter') run(); });
 $('ticker').addEventListener('input', updateHeadline);
+$('companyName').addEventListener('input', updateHeadline);
 $('initial').addEventListener('input', updateHeadline);
 $('playBtn').addEventListener('click', () => playing ? stop() : play());
 $('restartBtn').addEventListener('click', () => { progress = 0; applyFrame(); play(); });
 $('speed').addEventListener('input', () => { $('speedVal').textContent = parseInt($('speed').value, 10) + 'x'; });
+document.querySelectorAll('input[name=cur]').forEach(r =>
+  r.addEventListener('change', (e) => { if (e.target.checked) onCurrencyChange(e.target.value); })
+);
 window.addEventListener('resize', fitHeadline);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeadline);
 
