@@ -21,7 +21,9 @@
     --loss: #f87171;
     --gold: #e2b659;
   }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
     background:
       radial-gradient(1200px 600px at 80% -10%, #11241c 0%, transparent 55%),
@@ -32,35 +34,49 @@
     min-height: 100vh;
     padding: 28px 20px 60px;
   }
+
   .wrap { max-width: 1080px; margin: 0 auto; }
 
   /* ---------- Header ---------- */
   header { margin-bottom: 8px; text-align: center; }
+
   .eyebrow {
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: .28em;
-    text-transform: uppercase; color: var(--accent); margin-bottom: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
   }
+
   h1 {
-    font-family: 'Fraunces', serif; font-weight: 900; font-size: 52px;
-    line-height: 1.0; letter-spacing: -.02em;
-    white-space: nowrap; overflow: hidden;   /* JS auto-fits to a single line */
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -.02em;
+    text-align: center;
+    width: 100%;
+    /* font-size is set entirely by JS fitHeadline() */
   }
+
   h1 em { font-style: italic; color: var(--gold); margin: 0 .06em; }
 
-  /* ---------- Hamburger + Drawer ---------- */
+  /* ---------- Hamburger ---------- */
   .hamburger {
-    position: fixed; top: 3px; left: 3px; z-index: 40;
-    width: 5px; height: 5px; border-radius: 3px;
+    position: fixed; top: 14px; left: 14px; z-index: 40;
+    width: 44px; height: 44px; border-radius: 10px;
     background: var(--panel); border: 1px solid var(--line); color: var(--txt);
-    font-size: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;
     transition: border-color .15s, background .15s;
   }
   .hamburger:hover { border-color: var(--accent); }
+
   .overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(2px);
     opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 45;
   }
   .overlay.open { opacity: 1; pointer-events: auto; }
+
   .drawer {
     position: fixed; top: 0; left: 0; height: 100%; width: 340px; max-width: 86vw;
     background: var(--panel); border-right: 1px solid var(--line); z-index: 50;
@@ -68,14 +84,17 @@
   }
   .drawer.open { transform: translateX(0); }
   .drawer-inner { padding: 24px 22px 40px; }
+
   .drawer h2 {
     font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .2em;
     text-transform: uppercase; color: var(--muted); margin-bottom: 18px;
   }
   .drawer hr { border: none; border-top: 1px solid var(--line); margin: 26px 0 22px; }
 
+  /* ---------- Inputs ---------- */
   label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 7px; }
   .field { margin-bottom: 18px; }
+
   input[type=text], input[type=number] {
     width: 100%; background: var(--panel-2); border: 1px solid var(--line);
     color: var(--txt); border-radius: 10px; padding: 12px 14px;
@@ -83,17 +102,21 @@
     transition: border-color .15s;
   }
   input:focus { border-color: var(--accent); }
+
   .toggle { display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
-  .switch { position: relative; width: 46px; height: 26px; background: var(--panel-2);
-    border: 1px solid var(--line); border-radius: 20px; transition: background .2s; flex: none; }
-  .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
-    border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
+  .switch {
+    position: relative; width: 46px; height: 26px; background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 20px; transition: background .2s; flex: none;
+  }
+  .switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s;
+  }
   input[type=checkbox] { display: none; }
   input[type=checkbox]:checked + .switch { background: var(--accent-dim); border-color: var(--accent); }
   input[type=checkbox]:checked + .switch::after { transform: translateX(20px); background: var(--accent); }
   .toggle span { font-size: 14px; color: var(--txt); }
 
-  /* ---------- Currency radio group ---------- */
   .radiogroup { display: flex; flex-direction: column; gap: 9px; }
   .radio { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--txt); }
   .radio input[type=radio] {
@@ -101,6 +124,7 @@
     width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex: none; margin: 0;
   }
 
+  /* ---------- Buttons ---------- */
   button.run {
     width: 100%; margin-top: 6px; background: var(--accent); color: #06140d;
     border: none; border-radius: 10px; padding: 14px; font-weight: 600; font-size: 15px;
@@ -109,63 +133,102 @@
   button.run:hover { filter: brightness(1.08); }
   button.run:active { transform: translateY(1px); }
   button.run:disabled { opacity: .5; cursor: not-allowed; }
+
   .err { color: var(--loss); font-size: 13px; margin-top: 12px; min-height: 16px; }
 
   .controls { display: flex; flex-direction: column; gap: 16px; }
   .ctrlrow { display: flex; gap: 10px; }
-  .ctrlbtn { flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--txt);
-    border-radius: 9px; padding: 10px 14px; cursor: pointer; font-size: 13px; font-family: 'IBM Plex Mono', monospace; }
+  .ctrlbtn {
+    flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--txt);
+    border-radius: 9px; padding: 10px 14px; cursor: pointer; font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
   .ctrlbtn:hover { border-color: var(--accent); }
   .ctrlbtn:disabled { opacity: .45; cursor: not-allowed; }
+
   .speedwrap { display: flex; align-items: center; gap: 12px; }
   .speedwrap label { margin: 0; white-space: nowrap; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
-  input[type=range] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px;
-    background: var(--line); flex: 1; outline: none; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px;
-    border-radius: 50%; background: var(--accent); cursor: pointer; }
-  input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: none; border-radius: 50%;
-    background: var(--accent); cursor: pointer; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; height: 4px; border-radius: 4px;
+    background: var(--line); flex: 1; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px; border: none; border-radius: 50%;
+    background: var(--accent); cursor: pointer;
+  }
   .speedval { font-family: 'IBM Plex Mono', monospace; color: var(--accent); width: 46px; text-align: right; }
 
-  /* ---------- Hero (16:9) ---------- */
+  /* ---------- Hero ---------- */
   .hero {
     width: 100%; max-width: 1080px; margin: 22px auto 0;
     aspect-ratio: 16 / 9; display: flex; flex-direction: column; gap: 12px; min-height: 0;
   }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; }
 
+  /* ---------- Stats ---------- */
   .summary, .statrow4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex: none; }
   .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
   .stat .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
   .stat .v { font-family: 'IBM Plex Mono', monospace; font-size: clamp(15px, 1.7vw, 21px); font-weight: 600; margin-top: 6px; }
-  .v.pos { color: var(--accent); } .v.neg { color: var(--loss); } .v.gold { color: var(--gold); }
+  .v.pos { color: var(--accent); }
+  .v.neg { color: var(--loss); }
+  .v.gold { color: var(--gold); }
 
+  /* ---------- Chart ---------- */
   .chartcard { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 14px 18px 10px; }
-  .livebar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; flex-wrap: wrap; gap: 8px; flex: none; }
+  .livebar {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 6px; flex-wrap: wrap; gap: 8px; flex: none;
+  }
   .livedate { font-family: 'IBM Plex Mono', monospace; color: var(--gold); font-size: 14px; }
   .liveval { font-family: 'IBM Plex Mono', monospace; font-size: clamp(20px, 2.4vw, 26px); font-weight: 600; }
   .chart-holder { position: relative; flex: 1 1 auto; min-height: 0; }
   .chart-holder canvas { position: absolute; inset: 0; }
 
-  .placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    color: var(--muted); text-align: center; font-size: 15px; }
-  .countdown { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(80px, 16vw, 180px); color: var(--gold); }
+  .placeholder {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); text-align: center; font-size: 15px;
+  }
+  .countdown {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(80px, 16vw, 180px); color: var(--gold);
+  }
   .hidden { display: none !important; }
   .pill { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); }
 
+  /* ---------- Mobile ---------- */
   @media (max-width: 760px) {
     .hero { aspect-ratio: auto; }
     .summary, .statrow4 { grid-template-columns: repeat(2, 1fr); }
     .chartcard { min-height: 300px; }
-    header { margin-top: 56px; }
-    h1 { white-space: normal; }
+    header { margin-top: 72px; }
+
+    .headline-desktop { display: none !important; }
+    .headline-mobile  { display: flex; flex-direction: column; align-items: center; gap: 4px; }
   }
+
+  @media (min-width: 761px) {
+    .headline-mobile { display: none !important; }
+  }
+
+  .hl-line {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    letter-spacing: -.02em;
+    line-height: 1.1;
+    white-space: nowrap;
+    text-align: center;
+    width: 100%;
+  }
+  .hl-line em { font-style: italic; color: var(--gold); margin: 0 .06em; }
 </style>
 </head>
 <body>
 
-  <!-- Hamburger + slide-in drawer (Setup + Playback) -->
   <button class="hamburger" id="hamburger" aria-label="Open menu">&#9776;</button>
   <div class="overlay" id="overlay"></div>
   <aside class="drawer" id="drawer">
@@ -224,10 +287,14 @@
   <div class="wrap">
     <header>
       <div class="eyebrow">Portfolio Compounding in Action</div>
-      <h1 id="headline">Performance of <em>$1,000</em> invested in IPO of <em>&mdash;</em></h1>
+      <!-- desktop: single h1; mobile: two separate lines each sized independently -->
+      <h1 id="headline" class="headline-desktop"></h1>
+      <div class="headline-mobile" id="headlineMobile">
+        <div class="hl-line" id="hlLine1"></div>
+        <div class="hl-line" id="hlLine2"></div>
+      </div>
     </header>
 
-    <!-- HERO (16:9): top stats, share-price chart, bottom stats -->
     <div class="hero" id="hero">
       <div class="summary" id="summary">
         <div class="stat"><div class="k">Portfolio Growth</div><div class="v" id="sGrowth">&mdash;</div></div>
@@ -263,9 +330,8 @@
 <script>
 const $ = (id) => document.getElementById(id);
 
-/* ---------- Currency symbol (display only; does NOT convert values) ---------- */
+/* ---------- Currency ---------- */
 let CUR = '$';
-
 const fmtUSD  = (n) => CUR + Number(n).toLocaleString('en-US', {maximumFractionDigits: 0});
 const fmtUSD2 = (n) => CUR + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fmtNum  = (n) => Number(n).toLocaleString('en-US', {maximumFractionDigits: 2});
@@ -281,8 +347,6 @@ function fmtBig(n) {
 let chart = null, DATA = null, raf = null;
 let progress = 0, lastTs = null, playing = false, curK = 0;
 const SEC_PER_YEAR = 15;
-
-/* share price for a point (backend `price`; fall back to value only if missing) */
 const priceOf = (p) => (p.price != null ? p.price : p.v);
 
 /* ---------- Drawer ---------- */
@@ -291,28 +355,78 @@ function closeDrawer() { $('drawer').classList.remove('open'); $('overlay').clas
 $('hamburger').addEventListener('click', openDrawer);
 $('overlay').addEventListener('click', closeDrawer);
 
-/* ---------- Header (always one line) ---------- */
-function updateHeadline() {
+/* ---------- Headline + fitHeadline ----------
+   Desktop: single line, font grows until it fills TARGET_FILL (80%) of container width.
+   Mobile:  two lines, font grows until the WIDER of the two lines fills TARGET_FILL_MOBILE (90%).
+   Bounds: 14 px minimum, 120 px maximum to avoid absurd sizes on huge screens.
+*/
+const MIN_SIZE = 10;
+const MAX_SIZE = 160;
+
+function getLabel() {
   const name = $('companyName').value.trim();
-  const t = $('ticker').value.trim().toUpperCase();
-  const display = name || t || '&mdash;';
-  const init = parseFloat($('initial').value);
-  const val = init > 0 ? fmtUSD(init) : '&mdash;';
-  $('headline').innerHTML = 'Performance of <em>' + val + '</em> invested in IPO of <em>' + display + '</em>';
-  fitHeadline();
+  const t    = $('ticker').value.trim().toUpperCase();
+  return name || t || '\u2014';
 }
+function getVal() {
+  const init = parseFloat($('initial').value);
+  return init > 0 ? fmtUSD(init) : '\u2014';
+}
+
+// Binary-search: largest px size where el.scrollWidth <= maxW
+// el must already have whiteSpace:nowrap so scrollWidth = single-line width
+function bsearchSize(el, maxW) {
+  let lo = MIN_SIZE, hi = MAX_SIZE, best = MIN_SIZE;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    el.style.fontSize = mid + 'px';
+    if (el.scrollWidth <= maxW) { best = mid; lo = mid + 1; }
+    else { hi = mid - 1; }
+  }
+  el.style.fontSize = best + 'px';
+  return best;
+}
+
 function fitHeadline() {
-  const el = $('headline');
-  if (getComputedStyle(el).whiteSpace !== 'nowrap') { el.style.fontSize = ''; return; }
-  let size = 52;
-  el.style.fontSize = size + 'px';
-  let guard = 0;
-  while (el.scrollWidth > el.clientWidth && size > 16 && guard < 90) {
-    size -= 1; el.style.fontSize = size + 'px'; guard++;
+  const isMobile = window.innerWidth <= 760;
+  const refW     = ($('hero') || document.body).clientWidth;
+
+  if (!isMobile) {
+    // ── Desktop: single h1, one line, fills full hero width ──
+    const el = $('headline');
+    el.style.whiteSpace = 'nowrap';
+    el.innerHTML = 'Performance of <em>' + getVal() + '</em> invested in IPO of <em>' + getLabel() + '</em>';
+    bsearchSize(el, refW);
+    el.style.whiteSpace = '';
+  } else {
+    // ── Mobile: two separate divs, each independently sized to fill viewport width ──
+    // Use exact same width as the chart card / hero element
+    const mW = ($('hero') || document.body).clientWidth;
+
+    const l1 = $('hlLine1');
+    const l2 = $('hlLine2');
+
+    l1.style.whiteSpace = 'nowrap';
+    l2.style.whiteSpace = 'nowrap';
+
+    l1.innerHTML = 'Performance of <em>' + getVal() + '</em> invested in';
+    l2.innerHTML = 'IPO of <em>' + getLabel() + '</em>';
+
+    const s1 = bsearchSize(l1, mW);
+    const s2 = bsearchSize(l2, mW);
+
+    // Use the smaller of the two so both lines appear visually the same size
+    const unified = Math.min(s1, s2);
+    l1.style.fontSize = unified + 'px';
+    l2.style.fontSize = unified + 'px';
   }
 }
 
-/* ---------- Split markers plugin (vertical labels) ---------- */
+function updateHeadline() {
+  fitHeadline();
+}
+
+/* ---------- Split markers plugin ---------- */
 const splitPlugin = {
   id: 'splitMarkers',
   afterDatasetsDraw(c) {
@@ -322,10 +436,9 @@ const splitPlugin = {
     ctx.save();
     ctx.font = "10px 'IBM Plex Mono', monospace";
     DATA._splitPlot.forEach(sp => {
-      if (sp.idx >= curK) return;                  // not reached on the timeline yet
+      if (sp.idx >= curK) return;
       const px = x.getPixelForValue(sp.idx);
       if (px == null || px < chartArea.left - 1 || px > chartArea.right + 1) return;
-      // thin dashed line at the split date
       ctx.beginPath();
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = 'rgba(226,182,89,0.55)';
@@ -334,7 +447,6 @@ const splitPlugin = {
       ctx.lineTo(px, chartArea.bottom);
       ctx.stroke();
       ctx.setLineDash([]);
-      // vertical label reading downward, hugging the line (no overlap with neighbours)
       const text = 'Stock split (' + sp.ratio + ')';
       ctx.save();
       ctx.translate(px, chartArea.top + 4);
@@ -361,10 +473,6 @@ function buildSplitPlot() {
   });
 }
 
-/* ---------- Stepped dividend yield ----------
-   The displayed yield only updates on the points where a dividend is actually
-   paid (detected by div_cum increasing). It holds flat in between, instead of
-   drifting with the share price. */
 function buildYieldSteps() {
   DATA._yieldStep = [];
   const pts = DATA.points;
@@ -373,7 +481,7 @@ function buildYieldSteps() {
   let prevDiv = pts[0].div_cum != null ? pts[0].div_cum : 0;
   for (let i = 0; i < pts.length; i++) {
     const dc = pts[i].div_cum != null ? pts[i].div_cum : 0;
-    if (i > 0 && dc > prevDiv + 1e-9) {            // a dividend was paid at this point
+    if (i > 0 && dc > prevDiv + 1e-9) {
       held = pts[i].yield != null ? pts[i].yield : held;
     }
     prevDiv = dc;
@@ -409,7 +517,7 @@ function buildChart() {
   });
 }
 
-/* ---------- Frame: chart = SHARE PRICE; all stats grow live ---------- */
+/* ---------- Frame ---------- */
 function applyFrame() {
   if (!DATA) return;
   const pts = DATA.points;
@@ -418,50 +526,47 @@ function applyFrame() {
   curK = k;
   const cur = pts[k - 1];
 
-  /* chart line = share price progression */
   chart.data.labels = pts.slice(0, k).map(p => p.t);
   chart.data.datasets[0].data = pts.slice(0, k).map(p => priceOf(p));
   chart.update('none');
 
-  /* live bar = current share price */
   const curPrice = priceOf(cur);
   const basePrice = priceOf(pts[0]);
   $('liveVal').textContent = fmtUSD2(curPrice);
   $('liveVal').style.color = curPrice >= basePrice ? 'var(--accent)' : 'var(--loss)';
   $('liveDate').textContent = cur.t;
 
-  /* top row: portfolio metrics, live */
-  const init = DATA.summary.initial;
-  const curV = cur.v;
-  const frac = n > 1 ? (k - 1) / (n - 1) : 1;
+  const init  = DATA.summary.initial;
+  const curV  = cur.v;
+  const frac  = n > 1 ? (k - 1) / (n - 1) : 1;
   const elapsed = DATA.summary.years * frac;
-  const ret = (curV / init - 1) * 100;
-  const cagr = elapsed > 0 ? (Math.pow(curV / init, 1 / elapsed) - 1) * 100 : 0;
-  const cls = ret >= 0 ? 'pos' : 'neg';
+  const ret   = (curV / init - 1) * 100;
+  const cagr  = elapsed > 0 ? (Math.pow(curV / init, 1 / elapsed) - 1) * 100 : 0;
+  const cls   = ret >= 0 ? 'pos' : 'neg';
 
-  $('sGrowth').textContent = fmtUSD(curV);          $('sGrowth').className = 'v ' + cls;
+  $('sGrowth').textContent = fmtUSD(curV);           $('sGrowth').className = 'v ' + cls;
   $('sReturn').textContent = (ret >= 0 ? '+' : '') + ret.toLocaleString('en-US', {maximumFractionDigits: 0}) + '%';
-  $('sReturn').className = 'v ' + cls;
-  $('sCagr').textContent = cagr.toFixed(1) + '%';   $('sCagr').className = 'v ' + cls;
-  $('sYears').textContent = elapsed.toFixed(1) + ' yr'; $('sYears').className = 'v';
+  $('sReturn').className   = 'v ' + cls;
+  $('sCagr').textContent   = cagr.toFixed(1) + '%';  $('sCagr').className = 'v ' + cls;
+  $('sYears').textContent  = elapsed.toFixed(1) + ' yr'; $('sYears').className = 'v';
 
-  /* bottom row: shares, dividends, yield, company valuation, live */
-  const shares = cur.shares != null ? cur.shares : 0;
-  const divCum = cur.div_cum != null ? cur.div_cum : 0;
+  const shares = cur.shares   != null ? cur.shares   : 0;
+  const divCum = cur.div_cum  != null ? cur.div_cum  : 0;
   const dYield = (DATA._yieldStep && DATA._yieldStep.length)
     ? DATA._yieldStep[k - 1]
     : (cur.yield != null ? cur.yield : 0);
-  $('sShares').textContent = fmtNum(shares) + ' shares';   $('sShares').className = 'v';
-  $('sDiv').textContent = fmtUSD2(divCum);             $('sDiv').className = 'v gold';
-  $('sYield').textContent = dYield.toFixed(2) + '%';   $('sYield').className = 'v ' + (dYield > 0 ? 'pos' : '');
+
+  $('sShares').textContent = fmtNum(shares) + ' shares'; $('sShares').className = 'v';
+  $('sDiv').textContent    = fmtUSD2(divCum);             $('sDiv').className    = 'v gold';
+  $('sYield').textContent  = dYield.toFixed(2) + '%';    $('sYield').className  = 'v ' + (dYield > 0 ? 'pos' : '');
   if (cur.mktcap != null) {
-    $('sMktCap').textContent = fmtBig(cur.mktcap);     $('sMktCap').className = 'v pos';
+    $('sMktCap').textContent = fmtBig(cur.mktcap); $('sMktCap').className = 'v pos';
   } else {
-    $('sMktCap').textContent = '\u2014';               $('sMktCap').className = 'v';
+    $('sMktCap').textContent = '\u2014';           $('sMktCap').className = 'v';
   }
 }
 
-/* ---------- Animation loop ---------- */
+/* ---------- Animation ---------- */
 function tick(now) {
   if (!playing) return;
   if (lastTs === null) lastTs = now;
@@ -488,7 +593,7 @@ function stop() {
   $('playBtn').textContent = progress >= 1 ? 'Replay' : 'Play';
 }
 
-/* ---------- 3-2-1 countdown ---------- */
+/* ---------- Countdown ---------- */
 function countdownThenPlay() {
   const el = $('countdown');
   let n = 3;
@@ -510,16 +615,17 @@ function onCurrencyChange(sym) {
 
 /* ---------- Run ---------- */
 async function run() {
-  const ticker = $('ticker').value.trim();
+  const ticker  = $('ticker').value.trim();
   const initial = parseFloat($('initial').value);
   const reinvest = $('reinvest').checked;
   $('err').textContent = '';
-  if (!ticker) { $('err').textContent = 'Enter a stock ticker.'; return; }
+  if (!ticker)        { $('err').textContent = 'Enter a stock ticker.'; return; }
   if (!(initial > 0)) { $('err').textContent = 'Initial investment must be greater than 0.'; return; }
 
-  $('runBtn').disabled = true; $('runBtn').textContent = 'Fetching history...';
+  $('runBtn').disabled = true;
+  $('runBtn').textContent = 'Fetching history...';
   try {
-    const res = await fetch('/api/simulate', {
+    const res  = await fetch('/api/simulate', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ ticker, initial, reinvest })
     });
@@ -530,9 +636,8 @@ async function run() {
     updateHeadline();
     $('ph').classList.add('hidden');
     $('chart').classList.remove('hidden');
-     const nameForLabel = $('companyName').value.trim() || ticker.toUpperCase();
-    $('liveLabel').textContent = nameForLabel + ' / share price';
-    $('playBtn').disabled = false;
+    $('liveLabel').textContent = ($('companyName').value.trim() || ticker.toUpperCase()) + ' / share price';
+    $('playBtn').disabled    = false;
     $('restartBtn').disabled = false;
 
     buildChart();
@@ -544,7 +649,8 @@ async function run() {
   } catch (e) {
     $('err').textContent = e.message;
   } finally {
-    $('runBtn').disabled = false; $('runBtn').textContent = 'Run simulation';
+    $('runBtn').disabled = false;
+    $('runBtn').textContent = 'Run simulation';
   }
 }
 
@@ -560,10 +666,13 @@ $('speed').addEventListener('input', () => { $('speedVal').textContent = parseIn
 document.querySelectorAll('input[name=cur]').forEach(r =>
   r.addEventListener('change', (e) => { if (e.target.checked) onCurrencyChange(e.target.value); })
 );
-window.addEventListener('resize', fitHeadline);
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeadline);
+window.addEventListener('resize', updateHeadline);
 
+// Run once immediately, then again after fonts are confirmed ready
 updateHeadline();
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => { updateHeadline(); });
+}
 </script>
 </body>
 </html>
