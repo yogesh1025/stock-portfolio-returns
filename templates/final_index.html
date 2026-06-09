@@ -250,17 +250,6 @@ function fitHeadline(){
 const updateHeadline=()=>fitHeadline();
 
 /* ── Upsample ── */
-/* ── Build split dates set ──
-   Stores every split timestamp in a Set so upsampleData can
-   detect when a gap between two daily points crosses a split date
-   and skip easing — hard jump instead of smooth interpolation.
-*/
-function buildSplitDates(){
-  DATA._splitTs=new Set();
-  if(!DATA.splits)return;
-  DATA.splits.forEach(s=>DATA._splitTs.add(new Date(s.t).getTime()));
-}
-
 function upsampleData(){
   const pts=DATA.points;if(!pts||pts.length<2)return;
   const STEPS=Math.max(1,parseInt($('subpoints').value,10)||50);
@@ -269,13 +258,8 @@ function upsampleData(){
     const a=pts[i],b=pts[i+1];
     const tA=new Date(a.t).getTime(),tB=new Date(b.t).getTime();
     const pA=priceOf(a),pB=priceOf(b),vA=a.v??0,vB=b.v??0;
-    // Check if any split date falls between these two real daily points
-    const isSplitGap=DATA._splitTs&&[...DATA._splitTs].some(st=>st>=tA&&st<=tB);
     for(let s=0;s<STEPS;s++){
-      const f=s/STEPS;
-      // If this is a split gap: jump straight to pB (no easing through the gap)
-      const ease=isSplitGap?1:f*f*(3-2*f);
-      const ts=tA+(tB-tA)*f;
+      const f=s/STEPS,ease=f*f*(3-2*f),ts=tA+(tB-tA)*f;
       out.push({
         _ts:ts,
         t:new Date(ts).toLocaleDateString('en-US',{year:'numeric',month:'short'}),
@@ -503,7 +487,6 @@ async function run(){
     $('ph').classList.add('hidden');$('chart').classList.remove('hidden');
     $('liveLabel').textContent=($('companyName').value.trim()||ticker.toUpperCase())+' / share price';
     $('playBtn').disabled=false;$('restartBtn').disabled=false;
-    buildSplitDates();
     upsampleData();
     buildSplitPlot();
     buildYieldSteps();

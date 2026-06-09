@@ -1,11 +1,18 @@
 services:
   app:
+    # Build the image using the Dockerfile in the current directory
     build: .
+    # Name of the resulting Docker image
     image: portfolio-time-machine
+    # Name of the running container
     container_name: portfolio-app
+    # Ensure the container restarts automatically if it stops
     restart: unless-stopped
+    # Map port 8743 on host to port 8000 in the container
     ports:
       - "127.0.0.1:8743:8000"
+    # Mount the local directory to /app for instant code updates
     volumes:
-      - .:/app            # your edits land inside the container instantly
-    command: python app.py  # ensures Flask's debug reloader is active
+      - .:/app
+    # Use the Flask development server for automatic reloading
+    command: flask --app app.py run --host=0.0.0.0 --port=8000 --debug

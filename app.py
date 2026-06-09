@@ -129,6 +129,30 @@ def index():
 def healthz():
     return jsonify({"ok": True})
 
+@app.route("/api/search")
+def search_ticker():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify([])
+    try:
+        import requests
+        r = requests.get(
+            'https://query2.finance.yahoo.com/v1/finance/search',
+            params={'q': q, 'quotesCount': 10, 'newsCount': 0, 'enableFuzzyQuery': True},
+            headers={'User-Agent': 'Mozilla/5.0'},
+            timeout=5
+        )
+        data = r.json()
+        results = []
+        for item in data.get('quotes', []):
+            sym  = item.get('symbol', '')
+            name = item.get('shortname') or item.get('longname', '')
+            if sym and name:
+                results.append({'symbol': sym, 'name': name})
+        return jsonify(results)
+    except Exception:
+        return jsonify([])
+
 
 @app.route("/api/simulate", methods=["POST"])
 def api_simulate():
